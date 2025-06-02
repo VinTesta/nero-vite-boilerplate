@@ -1,16 +1,21 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
 import { Client } from 'userop'
+import { CommonContext } from './CommonContext'
 
 export const ClientContext = createContext<Client | null>(null)
 
+export interface ProviderProps {
+  children: React.ReactNode
+}
+
 export const ClientProvider: React.FC<ProviderProps> = ({ children }) => {
   const [client, setClient] = useState<Client | null>(null)
-  const configContextValue = useContext(ConfigContext)
+    const config = useContext(CommonContext);
 
-  const rpcUrl = configContextValue?.rpcUrl
-  const bundlerUrl = configContextValue?.bundlerUrl
-  const entryPoint = configContextValue?.entryPoint
-  const paymasterRpcUrl = AA_PLATFORM_CONFIG.paymasterRpc
+  const rpcUrl = config?.neroConfig.rpcUrl
+  const bundlerUrl = config?.neroConfig?.bundlerUrl
+  const entryPoint = config?.neroConfig?.entryPoint
+  const paymasterRpcUrl = config?.neroConfig.paymasterRpc
 
   useEffect(() => {
     const initClient = async () => {
@@ -31,15 +36,16 @@ export const ClientProvider: React.FC<ProviderProps> = ({ children }) => {
         console.error('Failed to initialize userop client:', error)
       }
     }
-    if (configContextValue && rpcUrl && bundlerUrl && entryPoint && paymasterRpcUrl) {
+    if (config?.neroConfig && rpcUrl && bundlerUrl && entryPoint && paymasterRpcUrl) {
       initClient()
-    } else if (configContextValue) {
+    } else if (config?.neroConfig) {
       console.warn('Client initialization skipped: Missing required config values from ConfigContext.', 
         { rpcUrl, bundlerUrl, entryPoint, paymasterRpcUrl });
     } else {
       console.warn('Client initialization skipped: ConfigContext is not yet available.');
     }
-  }, [configContextValue, rpcUrl, bundlerUrl, entryPoint, paymasterRpcUrl])
+
+  }, [config?.neroConfig, rpcUrl, bundlerUrl, entryPoint, paymasterRpcUrl])
 
   return <ClientContext.Provider value={client}>{children}</ClientContext.Provider>
 }

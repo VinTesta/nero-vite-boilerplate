@@ -14,7 +14,7 @@ export interface ChainConfig {
   tickerName: string,
 };
 
-export interface Web3Config {
+export interface BasicWeb3Config {
   clientId: string;
   web3AuthNetwork: WEB3AUTH_SAPPHIRE_NETWORK_TYPE;
   uiConfig: { appName: "AATest" },
@@ -37,11 +37,25 @@ export interface CommonContextType {
   }
 }
 
-export const CommonContext = createContext<CommonContextType | undefined>(undefined);
+export interface NeroConfig {
+  rpcUrl: string;
+  bundlerUrl: string;
+  entryPoint: string;
+  paymasterRpc: string;
+}
 
-export const CommonProvider = ({ children, _web3Config }: { children: React.ReactNode, _web3Config: Web3Config}) => {
+export interface ConfigType {
+  web3Config: CommonContextType
+  neroConfig: NeroConfig
+}
+
+export const CommonContext = createContext<ConfigType | undefined>(undefined);
+
+export const CommonProvider = ({ children, _web3Config, _neroConfig }: { children: React.ReactNode, _web3Config: BasicWeb3Config, _neroConfig: NeroConfig}) => {
   const [chainConfig, setChainConfig] = useState<ChainConfig>(_web3Config.chainConfig);
+  const [neroConfig, setNeroConfig] = useState<NeroConfig>(_neroConfig);
   const [commonConfig, setCommonConfig] = useState<CommonContextType>();
+  const [baseConfig, setBaseConfig] = useState<ConfigType>();
 
   useEffect(() => {
     const initConfig = async () => {
@@ -50,30 +64,32 @@ export const CommonProvider = ({ children, _web3Config }: { children: React.Reac
           chainConfig
         }
       });
-      
-      setCommonConfig({
+
+      const newCommonConfig: CommonContextType = {
         clientId: _web3Config.clientId,
         web3authNetwork: _web3Config.web3AuthNetwork,
         uiConfig: _web3Config.uiConfig,
         privateKeyProvider,
-        chainConfig: {
-          chainNamespace: "eip155",
-          chainId: chainConfig.chainId,
-          rpcTarget: chainConfig.rpcTarget,
-          displayName: chainConfig.displayName,
-          blockExplorer: chainConfig.blockExplorer,
-          ticker: chainConfig.ticker,
-          tickerName: chainConfig.tickerName
-        }
-      }
-      )
+        chainConfig
+      };
+
+      setCommonConfig(newCommonConfig);
+
+      setBaseConfig({
+        neroConfig: neroConfig,
+        web3Config: newCommonConfig
+      });
     };
 
     initConfig();
   }, []);
 
+  if (!baseConfig) {
+    return <div>Loading...</div>; 
+  }
+
   return (
-    <CommonContext.Provider value={ commonConfig }>
+    <CommonContext.Provider value={baseConfig}>
       {children}
     </CommonContext.Provider>
   );
